@@ -6,5 +6,9 @@ UE5.4蓝牙插件，开箱即用，用于连接和控制 DG-LAB 设备（目前�
 
 Out of the box Bluetooth plugin for Unreal Engine 5.4 to connect and control DG-LAB devices (Only Coyote 3.0). Supports Windows & Android with full Blueprint integration, based on official open-source protocol.
 
+
+## Demo
+<img width="578" height="260" alt="image" src="https://github.com/user-attachments/assets/f29324b1-7191-488c-9a57-9e6ebc7d2f29" />
+
 ## 免责声明
 本插件仅供学习和个人使用。商业使用需遵循 DG-LAB 原始项目的使用条款。
