@@ -1,0 +1,15 @@
+{
+    "Version": "1.2",
+    "Data": {
+        "Source": "d:\\ue\\projectue4\\plugintest\\plugins\\dglabforue\\source\\dglabforue\\private\\dglabv3protocol.cpp",
+        "ProvidedModule": "",
+        "PCH": "d:\\ue\\projectue4\\plugintest\\intermediate\\build\\win64\\x64\\plugintesteditor\\development\\unrealed\\sharedpch.unrealed.project.valapi.cpp20.h.pch",
+        "Includes": [
+            "d:\\ue\\projectue4\\plugintest\\plugins\\dglabforue\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\dglabforue\\definitions.dglabforue.h",
+            "d:\\ue\\projectue4\\plugintest\\plugins\\dglabforue\\source\\dglabforue\\public\\dglabv3protocol.h",
+            "d:\\ue\\projectue4\\plugintest\\plugins\\dglabforue\\intermediate\\build\\win64\\unrealeditor\\inc\\dglabforue\\uht\\dglabv3protocol.generated.h"
+        ],
+        "ImportedModules": [],
+        "ImportedHeaderUnits": []
+    }
+}

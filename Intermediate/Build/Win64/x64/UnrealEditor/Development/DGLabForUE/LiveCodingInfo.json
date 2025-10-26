@@ -1,0 +1,19 @@
+{
+	"RemapUnityFiles": 
+	{
+		"Module.DGLabForUE.cpp.obj": [
+			"DgLabBluetoothComponent.gen.cpp.obj",
+			"DgLabDeviceInfo.gen.cpp.obj",
+			"DGLabForUE.init.gen.cpp.obj",
+			"DgLabTestActor.gen.cpp.obj",
+			"DgLabTypes.gen.cpp.obj",
+			"DgLabV3Protocol.gen.cpp.obj",
+			"BluetoothManagerFactory.cpp.obj",
+			"DgLabBluetoothComponent.cpp.obj",
+			"DGLabForUE.cpp.obj",
+			"DgLabTestActor.cpp.obj",
+			"DgLabV3Protocol.cpp.obj",
+			"WindowsBluetoothManager.cpp.obj"
+		]
+	}
+}

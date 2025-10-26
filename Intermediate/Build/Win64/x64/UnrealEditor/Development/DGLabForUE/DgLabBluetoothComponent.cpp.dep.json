@@ -1,0 +1,23 @@
+{
+    "Version": "1.2",
+    "Data": {
+        "Source": "d:\\ue\\projectue4\\plugintest\\plugins\\dglabforue\\source\\dglabforue\\private\\dglabbluetoothcomponent.cpp",
+        "ProvidedModule": "",
+        "PCH": "d:\\ue\\projectue4\\plugintest\\intermediate\\build\\win64\\x64\\plugintesteditor\\development\\unrealed\\sharedpch.unrealed.project.valapi.cpp20.h.pch",
+        "Includes": [
+            "d:\\ue\\projectue4\\plugintest\\plugins\\dglabforue\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\dglabforue\\definitions.dglabforue.h",
+            "d:\\ue\\projectue4\\plugintest\\plugins\\dglabforue\\source\\dglabforue\\public\\dglabbluetoothcomponent.h",
+            "d:\\ue\\projectue4\\plugintest\\plugins\\dglabforue\\source\\dglabforue\\public\\dglabtypes.h",
+            "d:\\ue\\projectue4\\plugintest\\plugins\\dglabforue\\intermediate\\build\\win64\\unrealeditor\\inc\\dglabforue\\uht\\dglabtypes.generated.h",
+            "d:\\ue\\projectue4\\plugintest\\plugins\\dglabforue\\source\\dglabforue\\public\\dglabdeviceinfo.h",
+            "d:\\ue\\projectue4\\plugintest\\plugins\\dglabforue\\intermediate\\build\\win64\\unrealeditor\\inc\\dglabforue\\uht\\dglabdeviceinfo.generated.h",
+            "d:\\ue\\projectue4\\plugintest\\plugins\\dglabforue\\source\\dglabforue\\public\\dglabv3protocol.h",
+            "d:\\ue\\projectue4\\plugintest\\plugins\\dglabforue\\intermediate\\build\\win64\\unrealeditor\\inc\\dglabforue\\uht\\dglabv3protocol.generated.h",
+            "d:\\ue\\projectue4\\plugintest\\plugins\\dglabforue\\intermediate\\build\\win64\\unrealeditor\\inc\\dglabforue\\uht\\dglabbluetoothcomponent.generated.h",
+            "d:\\ue\\projectue4\\plugintest\\plugins\\dglabforue\\source\\dglabforue\\public\\bluetoothmanagerfactory.h",
+            "d:\\ue\\projectue4\\plugintest\\plugins\\dglabforue\\source\\dglabforue\\public\\ibluetoothmanager.h"
+        ],
+        "ImportedModules": [],
+        "ImportedHeaderUnits": []
+    }
+}

@@ -1,0 +1,303 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+	DGLabForUE Android配置 - 内嵌版本
+	将Java代码直接嵌入到GameActivity中，避免单独Java文件的打包问题
+-->
+<root xmlns:android="http://schemas.android.com/apk/res/android">
+	<!-- 初始化 -->
+	<init>
+		<log text="DGLabForUE: Embedded Android Plugin Loaded"/>
+	</init>
+
+	<!-- AndroidManifest.xml 权限添加 -->
+	<androidManifestUpdates>
+		<!-- Android 12+ (API 31+) 蓝牙权限 -->
+		<addPermission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation"/>
+		<addPermission android:name="android.permission.BLUETOOTH_CONNECT"/>
+		
+		<!-- Android 11- 向后兼容（可选） -->
+		<addPermission android:name="android.permission.BLUETOOTH"/>
+		<addPermission android:name="android.permission.BLUETOOTH_ADMIN"/>
+		<addPermission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+		<addPermission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+		
+		<!-- 蓝牙硬件特性 -->
+		<addFeature android:name="android.hardware.bluetooth_le" android:required="true"/>
+	</androidManifestUpdates>
+
+	<!-- 在GameActivity中添加蓝牙管理器的简化版本 -->
+	<gameActivityImportAdditions>
+		<insert>
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothGatt;
+import android.bluetooth.BluetoothGattCallback;
+import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattDescriptor;
+import android.bluetooth.BluetoothGattService;
+import android.bluetooth.BluetoothProfile;
+import android.bluetooth.le.BluetoothLeScanner;
+import android.bluetooth.le.ScanCallback;
+import android.bluetooth.le.ScanResult;
+import android.os.Handler;
+import android.os.Looper;
+import java.util.UUID;
+		</insert>
+	</gameActivityImportAdditions>
+
+	<!-- 在GameActivity类中添加蓝牙管理器（内联类） -->
+	<gameActivityClassAdditions>
+		<insert>
+<![CDATA[
+	// ==================== DGLab 蓝牙管理器（内嵌版本） ====================
+	
+	public static class DGLabBluetoothManager {
+		private static final String TAG = "DGLabBluetooth";
+		private static final UUID SERVICE_UUID = UUID.fromString("0000180C-0000-1000-8000-00805F9B34FB");
+		private static final UUID WRITE_UUID = UUID.fromString("0000150A-0000-1000-8000-00805F9B34FB");
+		private static final UUID NOTIFY_UUID = UUID.fromString("0000150B-0000-1000-8000-00805F9B34FB");
+		private static final UUID BATTERY_SERVICE_UUID = UUID.fromString("0000180A-0000-1000-8000-00805F9B34FB");
+		private static final UUID BATTERY_UUID = UUID.fromString("00001500-0000-1000-8000-00805F9B34FB");
+		private static final UUID CCCD_UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb");
+		
+		private long nativePtr;
+		private BluetoothAdapter bluetoothAdapter;
+		private BluetoothLeScanner bluetoothLeScanner;
+		private BluetoothGatt bluetoothGatt;
+		private BluetoothGattCharacteristic writeCharacteristic;
+		private BluetoothGattCharacteristic notifyCharacteristic;
+		private BluetoothGattCharacteristic batteryCharacteristic;
+		private boolean isScanning = false;
+		private boolean isConnected = false;
+		private Handler mainHandler;
+		
+		public DGLabBluetoothManager(long nativePtr) {
+			this.nativePtr = nativePtr;
+			this.mainHandler = new Handler(Looper.getMainLooper());
+			android.util.Log.d(TAG, "DGLabBluetoothManager created");
+		}
+		
+		public boolean initialize() {
+			try {
+				bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+				if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled()) {
+					return false;
+				}
+				bluetoothLeScanner = bluetoothAdapter.getBluetoothLeScanner();
+				return bluetoothLeScanner != null;
+			} catch (Exception e) {
+				android.util.Log.e(TAG, "Initialize failed: " + e.getMessage());
+				return false;
+			}
+		}
+		
+		public boolean startScan(float duration) {
+			if (isScanning) {
+				android.util.Log.w(TAG, "Already scanning");
+				return false;
+			}
+			try {
+				android.util.Log.d(TAG, "Starting BLE scan...");
+				bluetoothLeScanner.startScan(scanCallback);
+				isScanning = true;
+				android.util.Log.d(TAG, "BLE scan started successfully");
+				if (duration > 0) {
+					mainHandler.postDelayed(() -> stopScan(), (long)(duration * 1000));
+				}
+				return true;
+			} catch (SecurityException e) {
+				android.util.Log.e(TAG, "Start scan failed: Missing permission - " + e.getMessage());
+				return false;
+			} catch (Exception e) {
+				android.util.Log.e(TAG, "Start scan failed: " + e.getMessage());
+				e.printStackTrace();
+				return false;
+			}
+		}
+		
+		public void stopScan() {
+			if (!isScanning) return;
+			try {
+				bluetoothLeScanner.stopScan(scanCallback);
+				isScanning = false;
+			} catch (Exception e) {}
+		}
+		
+		public boolean connectToDevice(String deviceAddress) {
+			if (isConnected) return false;
+			try {
+				BluetoothDevice device = bluetoothAdapter.getRemoteDevice(deviceAddress);
+				bluetoothGatt = device.connectGatt(GameActivity.Get().getApplicationContext(), false, gattCallback);
+				return true;
+			} catch (Exception e) {
+				return false;
+			}
+		}
+		
+		public void disconnect() {
+			if (bluetoothGatt != null) {
+				bluetoothGatt.disconnect();
+				bluetoothGatt.close();
+				bluetoothGatt = null;
+			}
+			isConnected = false;
+		}
+		
+		public boolean writeData(byte[] data) {
+			if (!isConnected || writeCharacteristic == null) return false;
+			try {
+				writeCharacteristic.setValue(data);
+				return bluetoothGatt.writeCharacteristic(writeCharacteristic);
+			} catch (Exception e) {
+				return false;
+			}
+		}
+		
+		public boolean readBattery() {
+			if (!isConnected || batteryCharacteristic == null) return false;
+			try {
+				return bluetoothGatt.readCharacteristic(batteryCharacteristic);
+			} catch (Exception e) {
+				return false;
+			}
+		}
+		
+		public boolean subscribeNotifications() {
+			if (!isConnected || notifyCharacteristic == null) return false;
+			try {
+				bluetoothGatt.setCharacteristicNotification(notifyCharacteristic, true);
+				BluetoothGattDescriptor descriptor = notifyCharacteristic.getDescriptor(CCCD_UUID);
+				if (descriptor == null) return false;
+				descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+				return bluetoothGatt.writeDescriptor(descriptor);
+			} catch (Exception e) {
+				return false;
+			}
+		}
+		
+		private final ScanCallback scanCallback = new ScanCallback() {
+			@Override
+			public void onScanResult(int callbackType, ScanResult result) {
+				BluetoothDevice device = result.getDevice();
+				String name = device.getName();
+				String address = device.getAddress();
+				int rssi = result.getRssi();
+				
+				// 检查是否是DG-LAB设备
+				boolean isDGLabDevice = false;
+				if (name != null) {
+					// 支持多种DG-LAB设备命名格式：
+					// 1. D-LAB 或 DG-LAB 开头
+					// 2. 郊狼3.0的命名格式：数字+字母+数字 (如: 47L121000)
+					if (name.startsWith("D-LAB") || name.contains("DG-LAB") || 
+					    name.matches("^\\d+[A-Z]\\d+$")) {
+						isDGLabDevice = true;
+						android.util.Log.d(TAG, "Found DG-LAB device: " + name + " (" + address + ") RSSI: " + rssi);
+					}
+				}
+				
+				if (isDGLabDevice) {
+					nativeOnDeviceDiscovered(nativePtr, address, name, rssi);
+				}
+			}
+			
+			@Override
+			public void onScanFailed(int errorCode) {
+				android.util.Log.e(TAG, "BLE scan failed with error code: " + errorCode);
+				String errorMsg = "Unknown error";
+				switch (errorCode) {
+					case 1: errorMsg = "SCAN_FAILED_ALREADY_STARTED"; break;
+					case 2: errorMsg = "SCAN_FAILED_APPLICATION_REGISTRATION_FAILED"; break;
+					case 3: errorMsg = "SCAN_FAILED_INTERNAL_ERROR"; break;
+					case 4: errorMsg = "SCAN_FAILED_FEATURE_UNSUPPORTED"; break;
+					case 5: errorMsg = "SCAN_FAILED_OUT_OF_HARDWARE_RESOURCES"; break;
+					case 6: errorMsg = "SCAN_FAILED_SCANNING_TOO_FREQUENTLY"; break;
+				}
+				android.util.Log.e(TAG, "Scan failure reason: " + errorMsg);
+				isScanning = false;
+				nativeOnError(nativePtr, 2);
+			}
+		};
+		
+		private final BluetoothGattCallback gattCallback = new BluetoothGattCallback() {
+			@Override
+			public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
+				if (newState == BluetoothProfile.STATE_CONNECTED) {
+					isConnected = true;
+					gatt.discoverServices();
+					nativeOnConnectionStateChanged(nativePtr, true);
+				} else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+					isConnected = false;
+					nativeOnConnectionStateChanged(nativePtr, false);
+				}
+			}
+			
+			@Override
+			public void onServicesDiscovered(BluetoothGatt gatt, int status) {
+				if (status == BluetoothGatt.GATT_SUCCESS) {
+					BluetoothGattService mainService = gatt.getService(SERVICE_UUID);
+					if (mainService != null) {
+						writeCharacteristic = mainService.getCharacteristic(WRITE_UUID);
+						notifyCharacteristic = mainService.getCharacteristic(NOTIFY_UUID);
+					}
+					BluetoothGattService batteryService = gatt.getService(BATTERY_SERVICE_UUID);
+					if (batteryService != null) {
+						batteryCharacteristic = batteryService.getCharacteristic(BATTERY_UUID);
+					}
+					subscribeNotifications();
+				}
+			}
+			
+			@Override
+			public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+				if (status == BluetoothGatt.GATT_SUCCESS && BATTERY_UUID.equals(characteristic.getUuid())) {
+					byte[] value = characteristic.getValue();
+					if (value != null && value.length > 0) {
+						nativeOnBatteryLevelReceived(nativePtr, value[0] & 0xFF);
+					}
+				}
+			}
+			
+			@Override
+			public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
+				byte[] data = characteristic.getValue();
+				if (data != null && data.length > 0) {
+					nativeOnDataReceived(nativePtr, data);
+				}
+			}
+		};
+		
+		// JNI本地方法声明（必须在内部类中）
+		private static native void nativeOnDeviceDiscovered(long nativePtr, String address, String name, int rssi);
+		private static native void nativeOnConnectionStateChanged(long nativePtr, boolean connected);
+		private static native void nativeOnDataReceived(long nativePtr, byte[] data);
+		private static native void nativeOnBatteryLevelReceived(long nativePtr, int batteryLevel);
+		private static native void nativeOnError(long nativePtr, int errorCode);
+	}
+]]>
+		</insert>
+	</gameActivityClassAdditions>
+
+	<gameActivityOnCreateAdditions>
+		<insert>
+			// DGLab 蓝牙插件已加载（内嵌版本）
+			android.util.Log.d("DGLabForUE", "Embedded Bluetooth Manager ready");
+			
+			// 请求蓝牙权限（Android 6.0+需要运行时请求）
+			if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+				// Android 12+ (API 31+)
+				requestPermissions(new String[]{
+					android.Manifest.permission.BLUETOOTH_SCAN,
+					android.Manifest.permission.BLUETOOTH_CONNECT
+				}, 1001);
+			} else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+				// Android 6.0+ (API 23+)
+				requestPermissions(new String[]{
+					android.Manifest.permission.ACCESS_FINE_LOCATION,
+					android.Manifest.permission.ACCESS_COARSE_LOCATION
+				}, 1001);
+			}
+		</insert>
+	</gameActivityOnCreateAdditions>
+</root>
+
